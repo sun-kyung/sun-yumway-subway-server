@@ -7,13 +7,13 @@
 
 ## 실습 소스 및 결과
 
-- src/main/java/com/eomcs/lms/ServerApp.java 추가
+- src/main/java/sun/yumway/subway/ServerApp.java 추가
 
 ## 실습  
 
 ### 훈련 1: 프로젝트 폴더를 생성하라.
 
-- 'bitcamp-study/bitcamp-project-server' 디렉토리를 생성한다.
+- 'git/sun-yumway-subway-server' 디렉토리를 생성한다.
 
 ### 훈련 2: 프로젝트 폴더에 자바 프로젝트로 만들라.
 
