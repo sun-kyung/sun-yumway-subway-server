@@ -1,5 +1,6 @@
 package sun.yumway.subway;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -19,6 +20,10 @@ public class ServerApp {
   Set<ApplicationContextListener> listeners = new HashSet<>();
 
   Map<String, Object> context = new HashMap<>();
+
+  List<Board> boards;
+  List<Order> orders;
+  List<Side> sides;
 
   public void addApplicationContextListener(ApplicationContextListener listener) {
     listeners.add(listener);
@@ -40,8 +45,15 @@ public class ServerApp {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void service() {
+
     notifyApplicationInitialized();
+
+    orders = (List<Order>) context.get("orderList");
+    sides = (List<Side>) context.get("sideList");
+    boards = (List<Board>) context.get("boardList");
+
     try (ServerSocket serverSocket = new ServerSocket(9999)) {
       System.out.println("클라이언트 연결 대기중 ... ");
       while (true) {
@@ -59,8 +71,8 @@ public class ServerApp {
     notifyApplicationDestroyed();
   }
 
-  @SuppressWarnings("unchecked")
   int processRequest(Socket clientSocket) {
+
     try (Socket socket = clientSocket;
         ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
@@ -71,325 +83,394 @@ public class ServerApp {
         String request = in.readUTF();
         System.out.println("클라이언트가 보낸 메시지를 수신하였음");
 
-        if (request.equals("quit")) {
-          out.writeUTF("OK");
-          out.flush();
-          break;
-        }
+        switch (request) {
+          case "quit":
+            quit(out);
+            return 0;
 
-        if (request.equals("/server/stop")) {
-          out.writeUTF("OK");
-          out.flush();
-          return 9;
-        }
+          case "/server/stop":
+            quit(out);
+            return 9;
 
-        List<Order> orders = (List<Order>) context.get("orderList");
-        List<Side> sides = (List<Side>) context.get("sideList");
-        List<Board> boards = (List<Board>) context.get("boardList");
-        if (request.equals("/board/list")) {
-
-          out.writeUTF("OK");
-          out.reset();
-          // 기존에 출력했던 List<Board>객체의 직렬화 데이터를 무시하고 새로 직렬화를 수행한다
-          out.writeObject(context.get("boardList"));
+          case "/board/list":
+            listBoard(out);
+            break;
 
 
-        } else if (request.equals("/board/add")) {
-          try {
-
-            Board board = (Board) in.readObject();
-            int i = 0;
-            for (; i < boards.size(); i++) {
-              if (boards.get(i).getNo() == board.getNo()) {
-                break;
-              }
-            }
-            if (i == boards.size()) {
-              boards.add(board);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("같은 번호의 게시물이 있습니다");
-            }
+          case "/board/add":
+            addBoard(in, out);
+            break;
+          case "/board/detail":
+            detailBoard(in, out);
+            break;
+          case "/board/update":
+            updateBoard(in, out);
+            break;
+          case "/board/delete":
+            deleteBoard(in, out);
+            break;
+          case "/order/list":
+            listOrder(out);
+            break;
 
 
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/board/detail")) {
-          try {
+          case "/order/add":
+            addOrder(in, out);
+            break;
+          case "/order/detail":
+            detailOrder(in, out);
+          case "/order/update":
+            updateOrder(in, out);
+            break;
+          case "/order/delete":
+            deleteOrder(in, out);
+            break;
+          case "/side/list":
 
-            int no = in.readInt();
-            Board board = null;
-            for (Board b : boards) {
-              if (b.getNo() == no) {
-                board = b;
-                break;
-              }
-            }
-            if (board != null) {
-              out.writeUTF("OK");
-              out.writeObject(board);
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 게시물이 없습니다");
-            }
-            System.out.println("게시물을 저장하였습니다");
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/board/update")) {
-          try {
-
-            Board board = (Board) in.readObject();
-            int index = -1;
-            for (int i = 0; i < boards.size(); i++) {
-              if (boards.get(i).getNo() == board.getNo()) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) {
-              boards.set(index, board);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 게시물이 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/board/delete")) {
-          try {
-
-            int no = in.readInt();
-            int index = -1;
-            for (int i = 0; i < boards.size(); i++) {
-              if (boards.get(i).getNo() == no) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) { // 삭제하려는 번호의 게시물을 찾았다면
-              boards.remove(index);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 게시물이 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/order/list")) {
-
-          out.writeUTF("OK");
-          out.reset();
-          out.writeObject(context.get("orderList"));
-
-
-        } else if (request.equals("/order/add")) {
-          try {
-
-            Order order = (Order) in.readObject();
-            int i = 0;
-            for (; i < orders.size(); i++) {
-              if (orders.get(i).getNo() == order.getNo()) {
-                break;
-              }
-            }
-            if (i == orders.size()) {
-              orders.add(order);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("같은 번호의 주문이 있습니다");
-            }
-
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/order/detail")) {
-          try {
-
-            int no = in.readInt();
-            Order order = null;
-            for (Order o : orders) {
-              if (o.getNo() == no) {
-                order = o;
-                break;
-              }
-            }
-            if (order != null) {
-              out.writeUTF("OK");
-              out.writeObject(order);
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 주문이 없습니다");
-            }
-            System.out.println("주문을 저장하였습니다");
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/order/update")) {
-          try {
-            Order order = (Order) in.readObject();
-            int index = -1;
-            for (int i = 0; i < orders.size(); i++) {
-              if (orders.get(i).getNo() == order.getNo()) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) {
-              orders.set(index, order);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 주문이 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/order/delete")) {
-          try {
-
-            int no = in.readInt();
-            int index = -1;
-            for (int i = 0; i < orders.size(); i++) {
-              if (orders.get(i).getNo() == no) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) {
-              orders.remove(index);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 주문이 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/side/list")) {
-
-          out.writeUTF("OK");
-          out.reset();
-          out.writeObject(context.get("sideList"));
-        } else if (request.equals("/side/add")) {
-          try {
-
-            Side side = (Side) in.readObject();
-            int i = 0;
-            for (; i < sides.size(); i++) {
-              if (sides.get(i).getNo() == side.getNo()) {
-                break;
-              }
-            }
-            if (i == sides.size()) {
-              sides.add(side);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("같은 번호의 사이드가 있습니다");
-            }
-
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/side/detail")) {
-          try {
-
-            int no = in.readInt();
-            Side side = null;
-            for (Side m : sides) {
-              if (m.getNo() == no) {
-                side = m;
-                break;
-              }
-            }
-            if (side != null) {
-              out.writeUTF("OK");
-              out.writeObject(side);
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 사이드가 없습니다");
-            }
-            System.out.println("사이드 정보를 저장하였습니다");
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/side/update")) {
-          try {
-
-            Side side = (Side) in.readObject();
-            int index = -1;
-            for (int i = 0; i < sides.size(); i++) {
-              if (sides.get(i).getNo() == side.getNo()) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) {
-              sides.set(index, side);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 사이드가 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        } else if (request.equals("/side/delete")) {
-          try {
-
-            int no = in.readInt();
-            int index = -1;
-            for (int i = 0; i < sides.size(); i++) {
-              if (sides.get(i).getNo() == no) {
-                index = i;
-                break;
-              }
-            }
-            if (index != -1) { // 삭제하려는 번호의 게시물을 찾았다면
-              sides.remove(index);
-              out.writeUTF("OK");
-            } else {
-              out.writeUTF("FAIL");
-              out.writeUTF("해당 번호의 사이드가 없습니다");
-            }
-          } catch (Exception e) {
-            out.writeUTF("FAIL");
-            out.writeUTF(e.getMessage());
-          }
-        }
-
-        else {
-          out.writeUTF("FAIL");
-          out.writeUTF("요청한 명령을 처리할 수 없습니다");
+            listSide(out);
+            break;
+          case "/side/add":
+            addSide(in, out);
+            break;
+          case "/side/detail":
+            detailSide(in, out);
+            break;
+          case "/side/update":
+            updateSide(in, out);
+            break;
+          case "/side/delete":
+            deleteSide(in, out);
+            break;
+          default:
+            notFound(out);
         }
         out.flush();
+        System.out.println("클라이언트로 메세지를 전송하였음");
       }
-      System.out.println("클라이언트로 메세지를 전송하였음");
-
-      return 0;
-
     } catch (Exception e) {
       System.out.println("예외 발생: ");
       e.printStackTrace();
       return -1;
     }
+  }
+
+  private void notFound(ObjectOutputStream out) throws IOException {
+    out.writeUTF("FAIL");
+    out.writeUTF("요청한 명령을 처리할 수 없습니다");
+  }
+
+  private void deleteSide(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      int index = -1;
+      for (int i = 0; i < sides.size(); i++) {
+        if (sides.get(i).getNo() == no) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) { // 삭제하려는 번호의 게시물을 찾았다면
+        sides.remove(index);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 사이드가 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void updateSide(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      Side side = (Side) in.readObject();
+      int index = -1;
+      for (int i = 0; i < sides.size(); i++) {
+        if (sides.get(i).getNo() == side.getNo()) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) {
+        sides.set(index, side);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 사이드가 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void detailSide(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      Side side = null;
+      for (Side m : sides) {
+        if (m.getNo() == no) {
+          side = m;
+          break;
+        }
+      }
+      if (side != null) {
+        out.writeUTF("OK");
+        out.writeObject(side);
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 사이드가 없습니다");
+      }
+      System.out.println("사이드 정보를 저장하였습니다");
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void addSide(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      Side side = (Side) in.readObject();
+      int i = 0;
+      for (; i < sides.size(); i++) {
+        if (sides.get(i).getNo() == side.getNo()) {
+          break;
+        }
+      }
+      if (i == sides.size()) {
+        sides.add(side);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("같은 번호의 사이드가 있습니다");
+      }
+
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void listSide(ObjectOutputStream out) throws IOException {
+    out.writeUTF("OK");
+    out.reset();
+    out.writeObject(context.get(sides));
+  }
+
+  private void deleteOrder(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      int index = -1;
+      for (int i = 0; i < orders.size(); i++) {
+        if (orders.get(i).getNo() == no) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) {
+        orders.remove(index);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 주문이 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void updateOrder(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+      Order order = (Order) in.readObject();
+      int index = -1;
+      for (int i = 0; i < orders.size(); i++) {
+        if (orders.get(i).getNo() == order.getNo()) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) {
+        orders.set(index, order);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 주문이 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void detailOrder(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      Order order = null;
+      for (Order o : orders) {
+        if (o.getNo() == no) {
+          order = o;
+          break;
+        }
+      }
+      if (order != null) {
+        out.writeUTF("OK");
+        out.writeObject(order);
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 주문이 없습니다");
+      }
+      System.out.println("주문을 저장하였습니다");
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void addOrder(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      Order order = (Order) in.readObject();
+      int i = 0;
+      for (; i < orders.size(); i++) {
+        if (orders.get(i).getNo() == order.getNo()) {
+          break;
+        }
+      }
+      if (i == orders.size()) {
+        orders.add(order);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("같은 번호의 주문이 있습니다");
+      }
+
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void listOrder(ObjectOutputStream out) throws IOException {
+    out.writeUTF("OK");
+    out.reset();
+    out.writeObject(context.get(orders));
+  }
+
+  private void deleteBoard(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      int index = -1;
+      for (int i = 0; i < boards.size(); i++) {
+        if (boards.get(i).getNo() == no) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) { // 삭제하려는 번호의 게시물을 찾았다면
+        boards.remove(index);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 게시물이 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void updateBoard(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      Board board = (Board) in.readObject();
+      int index = -1;
+      for (int i = 0; i < boards.size(); i++) {
+        if (boards.get(i).getNo() == board.getNo()) {
+          index = i;
+          break;
+        }
+      }
+      if (index != -1) {
+        boards.set(index, board);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 게시물이 없습니다");
+      }
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void detailBoard(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      int no = in.readInt();
+      Board board = null;
+      for (Board b : boards) {
+        if (b.getNo() == no) {
+          board = b;
+          break;
+        }
+      }
+      if (board != null) {
+        out.writeUTF("OK");
+        out.writeObject(board);
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("해당 번호의 게시물이 없습니다");
+      }
+      System.out.println("게시물을 저장하였습니다");
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void addBoard(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    try {
+
+      Board board = (Board) in.readObject();
+      int i = 0;
+      for (; i < boards.size(); i++) {
+        if (boards.get(i).getNo() == board.getNo()) {
+          break;
+        }
+      }
+      if (i == boards.size()) {
+        boards.add(board);
+        out.writeUTF("OK");
+      } else {
+        out.writeUTF("FAIL");
+        out.writeUTF("같은 번호의 게시물이 있습니다");
+      }
+
+
+    } catch (Exception e) {
+      out.writeUTF("FAIL");
+      out.writeUTF(e.getMessage());
+    }
+  }
+
+  private void quit(ObjectOutputStream out) throws IOException {
+    out.writeUTF("OK");
+    out.flush();
+  }
+
+  private void listBoard(ObjectOutputStream out) throws IOException {
+    out.writeUTF("OK");
+    out.reset();
+    out.writeObject(context.get(boards));
   }
 
   public static void main(String[] args) {
