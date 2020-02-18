@@ -2,28 +2,20 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.List;
+import sun.yumway.subway.dao.SideObjectFileDao;
 import sun.yumway.subway.domain.Side;
 
 public class SideUpdateServlet implements Servlet {
-  List<Side> sides;
+  SideObjectFileDao sideDao;
 
-  public SideUpdateServlet(List<Side> sides) {
-    this.sides = sides;
+  public SideUpdateServlet(SideObjectFileDao sideDao) {
+    this.sideDao = sideDao;
   }
 
   @Override
   public void service(ObjectInputStream in, ObjectOutputStream out) throws Exception {
     Side side = (Side) in.readObject();
-    int index = -1;
-    for (int i = 0; i < sides.size(); i++) {
-      if (sides.get(i).getNo() == side.getNo()) {
-        index = i;
-        break;
-      }
-    }
-    if (index != -1) {
-      sides.set(index, side);
+    if (sideDao.update(side) > 0) {
       out.writeUTF("OK");
     } else {
       out.writeUTF("FAIL");

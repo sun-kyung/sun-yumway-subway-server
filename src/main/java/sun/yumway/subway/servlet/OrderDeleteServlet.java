@@ -2,28 +2,19 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.List;
-import sun.yumway.subway.domain.Order;
+import sun.yumway.subway.dao.OrderObjectFileDao;
 
 public class OrderDeleteServlet implements Servlet {
-  List<Order> orders;
+  OrderObjectFileDao orderDao;
 
-  public OrderDeleteServlet(List<Order> orders) {
-    this.orders = orders;
+  public OrderDeleteServlet(OrderObjectFileDao orderDao) {
+    this.orderDao = orderDao;
   }
 
   @Override
   public void service(ObjectInputStream in, ObjectOutputStream out) throws Exception {
     int no = in.readInt();
-    int index = -1;
-    for (int i = 0; i < orders.size(); i++) {
-      if (orders.get(i).getNo() == no) {
-        index = i;
-        break;
-      }
-    }
-    if (index != -1) {
-      orders.remove(index);
+    if (orderDao.delete(no) > 0) {
       out.writeUTF("OK");
     } else {
       out.writeUTF("FAIL");

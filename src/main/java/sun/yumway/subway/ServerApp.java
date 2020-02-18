@@ -7,13 +7,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import sun.yumway.subway.context.ApplicationContextListener;
-import sun.yumway.subway.domain.Board;
-import sun.yumway.subway.domain.Order;
-import sun.yumway.subway.domain.Side;
+import sun.yumway.subway.dao.BoardObjectFileDao;
+import sun.yumway.subway.dao.OrderObjectFileDao;
+import sun.yumway.subway.dao.SideObjectFileDao;
 import sun.yumway.subway.servlet.BoardAddServlet;
 import sun.yumway.subway.servlet.BoardDeleteServlet;
 import sun.yumway.subway.servlet.BoardDetailServlet;
@@ -39,10 +38,6 @@ public class ServerApp {
 
   Map<String, Servlet> servletMap = new HashMap<>();
 
-  List<Board> boards;
-  List<Order> orders;
-  List<Side> sides;
-
   public void addApplicationContextListener(ApplicationContextListener listener) {
     listeners.add(listener);
   }
@@ -63,32 +58,31 @@ public class ServerApp {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void service() {
 
     notifyApplicationInitialized();
 
-    orders = (List<Order>) context.get("orderList");
-    sides = (List<Side>) context.get("sideList");
-    boards = (List<Board>) context.get("boardList");
+    BoardObjectFileDao boardDao = (BoardObjectFileDao) context.get("boardDao");
+    OrderObjectFileDao orderDao = (OrderObjectFileDao) context.get("orderDao");
+    SideObjectFileDao sideDao = (SideObjectFileDao) context.get("sideDao");
 
-    servletMap.put("/board/list", new BoardListServlet(boards));
-    servletMap.put("/board/add", new BoardAddServlet(boards));
-    servletMap.put("/board/detail", new BoardDetailServlet(boards));
-    servletMap.put("/board/update", new BoardUpdateServlet(boards));
-    servletMap.put("/board/delete", new BoardDeleteServlet(boards));
+    servletMap.put("/board/list", new BoardListServlet(boardDao));
+    servletMap.put("/board/add", new BoardAddServlet(boardDao));
+    servletMap.put("/board/detail", new BoardDetailServlet(boardDao));
+    servletMap.put("/board/update", new BoardUpdateServlet(boardDao));
+    servletMap.put("/board/delete", new BoardDeleteServlet(boardDao));
 
-    servletMap.put("/order/list", new OrderListServlet(orders));
-    servletMap.put("/order/add", new OrderAddServlet(orders));
-    servletMap.put("/order/detail", new OrderDetailServlet(orders));
-    servletMap.put("/order/update", new OrderUpdateServlet(orders));
-    servletMap.put("/order/delete", new OrderDeleteServlet(orders));
+    servletMap.put("/order/list", new OrderListServlet(orderDao));
+    servletMap.put("/order/add", new OrderAddServlet(orderDao));
+    servletMap.put("/order/detail", new OrderDetailServlet(orderDao));
+    servletMap.put("/order/update", new OrderUpdateServlet(orderDao));
+    servletMap.put("/order/delete", new OrderDeleteServlet(orderDao));
 
-    servletMap.put("/side/list", new SideListServlet(sides));
-    servletMap.put("/side/add", new SideAddServlet(sides));
-    servletMap.put("/side/detail", new SideDetailServlet(sides));
-    servletMap.put("/side/update", new SideUpdateServlet(sides));
-    servletMap.put("/side/delete", new SideDeleteServlet(sides));
+    servletMap.put("/side/list", new SideListServlet(sideDao));
+    servletMap.put("/side/add", new SideAddServlet(sideDao));
+    servletMap.put("/side/detail", new SideDetailServlet(sideDao));
+    servletMap.put("/side/update", new SideUpdateServlet(sideDao));
+    servletMap.put("/side/delete", new SideDeleteServlet(sideDao));
 
     try (ServerSocket serverSocket = new ServerSocket(9999)) {
       System.out.println("클라이언트 연결 대기중 ... ");

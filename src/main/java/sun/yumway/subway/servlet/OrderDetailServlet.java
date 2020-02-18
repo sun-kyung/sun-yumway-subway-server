@@ -2,26 +2,20 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.List;
+import sun.yumway.subway.dao.OrderObjectFileDao;
 import sun.yumway.subway.domain.Order;
 
 public class OrderDetailServlet implements Servlet {
-  List<Order> orders;
+  OrderObjectFileDao orderDao;
 
-  public OrderDetailServlet(List<Order> orders) {
-    this.orders = orders;
+  public OrderDetailServlet(OrderObjectFileDao orderDao) {
+    this.orderDao = orderDao;
   }
 
   @Override
   public void service(ObjectInputStream in, ObjectOutputStream out) throws Exception {
     int no = in.readInt();
-    Order order = null;
-    for (Order o : orders) {
-      if (o.getNo() == no) {
-        order = o;
-        break;
-      }
-    }
+    Order order = orderDao.findByNo(no);
     if (order != null) {
       out.writeUTF("OK");
       out.writeObject(order);
