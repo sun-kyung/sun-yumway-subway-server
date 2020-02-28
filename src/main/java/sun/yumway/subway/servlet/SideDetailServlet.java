@@ -2,13 +2,13 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import sun.yumway.subway.dao.SideObjectFileDao;
+import sun.yumway.subway.dao.json.SideJsonFileDao;
 import sun.yumway.subway.domain.Side;
 
 public class SideDetailServlet implements Servlet {
-  SideObjectFileDao sideDao;
+  SideJsonFileDao sideDao;
 
-  public SideDetailServlet(SideObjectFileDao sideDao) {
+  public SideDetailServlet(SideJsonFileDao sideDao) {
     this.sideDao = sideDao;
   }
 

@@ -10,9 +10,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import sun.yumway.subway.context.ApplicationContextListener;
-import sun.yumway.subway.dao.BoardObjectFileDao;
-import sun.yumway.subway.dao.OrderObjectFileDao;
-import sun.yumway.subway.dao.SideObjectFileDao;
+import sun.yumway.subway.dao.json.BoardJsonFileDao;
+import sun.yumway.subway.dao.json.OrderJsonFileDao;
+import sun.yumway.subway.dao.json.SideJsonFileDao;
 import sun.yumway.subway.servlet.BoardAddServlet;
 import sun.yumway.subway.servlet.BoardDeleteServlet;
 import sun.yumway.subway.servlet.BoardDetailServlet;
@@ -62,9 +62,9 @@ public class ServerApp {
 
     notifyApplicationInitialized();
 
-    BoardObjectFileDao boardDao = (BoardObjectFileDao) context.get("boardDao");
-    OrderObjectFileDao orderDao = (OrderObjectFileDao) context.get("orderDao");
-    SideObjectFileDao sideDao = (SideObjectFileDao) context.get("sideDao");
+    BoardJsonFileDao boardDao = (BoardJsonFileDao) context.get("boardDao");
+    OrderJsonFileDao orderDao = (OrderJsonFileDao) context.get("orderDao");
+    SideJsonFileDao sideDao = (SideJsonFileDao) context.get("sideDao");
 
     servletMap.put("/board/list", new BoardListServlet(boardDao));
     servletMap.put("/board/add", new BoardAddServlet(boardDao));

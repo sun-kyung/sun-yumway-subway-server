@@ -2,12 +2,12 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import sun.yumway.subway.dao.OrderObjectFileDao;
+import sun.yumway.subway.dao.json.OrderJsonFileDao;
 
 public class OrderListServlet implements Servlet {
-  OrderObjectFileDao orderDao;
+  OrderJsonFileDao orderDao;
 
-  public OrderListServlet(OrderObjectFileDao orderDao) {
+  public OrderListServlet(OrderJsonFileDao orderDao) {
     this.orderDao = orderDao;
   }
 
