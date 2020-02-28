@@ -3,13 +3,14 @@ package sun.yumway.subway.dao;
 import java.util.List;
 import sun.yumway.subway.domain.Side;
 
-public class SideObjectFileDao extends AbstractObjectFileDao<Side> {
+public class SideObjectFileDao extends AbstractObjectFileDao<Side> implements SideDao {
 
 
   public SideObjectFileDao(String filename) {
     super(filename);
   }
 
+  @Override
   public int insert(Side side) throws Exception {
     if (indexOf(side.getNo()) > -1) {
       return 0;
@@ -19,10 +20,12 @@ public class SideObjectFileDao extends AbstractObjectFileDao<Side> {
     return 1;
   }
 
+  @Override
   public List<Side> findAll() throws Exception {
     return list;
   }
 
+  @Override
   public Side findByNo(int no) throws Exception {
     int index = indexOf(no);
     if (index == -1) {
@@ -31,6 +34,7 @@ public class SideObjectFileDao extends AbstractObjectFileDao<Side> {
     return list.get(index);
   }
 
+  @Override
   public int update(Side side) throws Exception {
     int index = indexOf(side.getNo());
     if (index == -1) {
@@ -41,6 +45,7 @@ public class SideObjectFileDao extends AbstractObjectFileDao<Side> {
     return 1;
   }
 
+  @Override
   public int delete(int no) throws Exception {
     int index = indexOf(no);
     if (index == -1) {

@@ -3,12 +3,13 @@ package sun.yumway.subway.dao;
 import java.util.List;
 import sun.yumway.subway.domain.Order;
 
-public class OrderObjectFileDao extends AbstractObjectFileDao<Order> {
+public class OrderObjectFileDao extends AbstractObjectFileDao<Order> implements OrderDao {
 
   public OrderObjectFileDao(String filename) {
     super(filename);
   }
 
+  @Override
   public int insert(Order order) throws Exception {
     if (indexOf(order.getNo()) > -1) {
       return 0;
@@ -18,10 +19,12 @@ public class OrderObjectFileDao extends AbstractObjectFileDao<Order> {
     return 1;
   }
 
+  @Override
   public List<Order> findAll() throws Exception {
     return list;
   }
 
+  @Override
   public Order findByNo(int no) throws Exception {
     int index = indexOf(no);
     if (index == -1) {
@@ -30,6 +33,7 @@ public class OrderObjectFileDao extends AbstractObjectFileDao<Order> {
     return list.get(index);
   }
 
+  @Override
   public int update(Order order) throws Exception {
     int index = indexOf(order.getNo());
     if (index == -1) {
@@ -40,6 +44,7 @@ public class OrderObjectFileDao extends AbstractObjectFileDao<Order> {
     return 1;
   }
 
+  @Override
   public int delete(int no) throws Exception {
     int index = indexOf(no);
     if (index == -1) {

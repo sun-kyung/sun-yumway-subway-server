@@ -2,13 +2,13 @@ package sun.yumway.subway.servlet;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import sun.yumway.subway.dao.json.BoardJsonFileDao;
+import sun.yumway.subway.dao.BoardDao;
 import sun.yumway.subway.domain.Board;
 
 public class BoardUpdateServlet implements Servlet {
-  BoardJsonFileDao boardDao;
+  BoardDao boardDao;
 
-  public BoardUpdateServlet(BoardJsonFileDao boardDao) {
+  public BoardUpdateServlet(BoardDao boardDao) {
     this.boardDao = boardDao;
   }
 

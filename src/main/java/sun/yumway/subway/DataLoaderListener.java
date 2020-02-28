@@ -12,13 +12,10 @@ public class DataLoaderListener implements ApplicationContextListener {
   public void contextInitialized(Map<String, Object> context) {
     System.out.println("데이터를 로딩합니다");
 
-    BoardJsonFileDao boardDao = new BoardJsonFileDao("./board.json");
-    OrderJsonFileDao orderDao = new OrderJsonFileDao("./order.json");
-    SideJsonFileDao sideDao = new SideJsonFileDao("./side.json");
 
-    context.put("boardDao", boardDao);
-    context.put("orderDao", orderDao);
-    context.put("sideDao", sideDao);
+    context.put("boardDao", new BoardJsonFileDao("./board.json"));
+    context.put("orderDao", new OrderJsonFileDao("./order.json"));
+    context.put("sideDao", new SideJsonFileDao("./side.json"));
 
   }
 
